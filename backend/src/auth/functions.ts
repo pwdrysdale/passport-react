@@ -9,16 +9,25 @@ const TwitterStrategy = require("passport-twitter").Strategy;
 const GitHubStrategy = require("passport-github").Strategy;
 
 passport.serializeUser(async (user: any, done: any) => {
-    const { id } = user
-    return done(null, id)
+    try {
+        const { id } = user
+        console.log('serialising')
+        done(null, id)
+    } catch (err) {
+        console.log(err)
+        done(err, null)
+    }
 });
 
 passport.deserializeUser(async (id: any, done: any) => {
     try {
+        console.log('Deserialising')
         const u = await User.findOne(id)
-        return done(null, u)
+        done(null, u)
     } catch (err) {
-        return done(err, null)
+        console.log("tried to deserialise")
+        console.log(err)
+        done(err, null)
     }
 
 })

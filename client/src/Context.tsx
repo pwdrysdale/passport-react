@@ -6,14 +6,23 @@ export const myContext = createContext({});
 const Context = (props: any) => {
     const [userObject, setUserObject] = useState({});
 
-    useEffect(() => {
-        axios
-            .get("http://localhost:4000/auth/me", { withCredentials: true })
-            .then((res: AxiosResponse) => {
-                if (res.data) {
-                    setUserObject(res.data);
-                }
+    const getUser = async () => {
+        try {
+            const { data } = await axios.get("http://localhost:4000/auth/me", {
+                withCredentials: true,
             });
+
+            if (data) {
+                setUserObject(data);
+            }
+        } catch (err) {
+            setUserObject({});
+            console.error(err);
+        }
+    };
+
+    useEffect(() => {
+        getUser();
     }, []);
 
     return (

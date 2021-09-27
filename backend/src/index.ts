@@ -9,39 +9,45 @@ import passport from "passport";
 import authRoutes from './auth/routes'
 
 export const startServer = async () => {
+    try {
+        // secrets
+        dotenv.config();
 
-    dotenv.config();
+        // start an app
+        const app = express();
 
-    const app = express();
+        // db
+        await createConnection()
 
-    await createConnection()
+        // Middleware
+        app.use(express.json());
+        app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 
-    // Middleware
-    app.use(express.json());
-    app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+        // Auth
+        app.use(
+            session({
+                secret: process.env.SESSION_SECRET,
+                resave: true,
+                saveUninitialized: true,
+                cookie: {
+                    sameSite: false,
+                    secure: false,
+                    maxAge: 1000 * 60 * 60 * 24 * 7 // One Week
+                }
+            })
+        );
+        app.use(passport.initialize());
+        app.use(passport.session());
+        app.use("/auth", authRoutes)
 
-
-    // Auth
-    app.use(
-        session({
-            secret: "this is the session secret",
-            resave: true,
-            saveUninitialized: true,
-            cookie: {
-                sameSite: false,
-                secure: false,
-                maxAge: 1000 * 60 * 60 * 24 * 7 // One Week
-            }
-        })
-    );
-    app.use(passport.initialize());
-    app.use(passport.session());
-    app.use("/auth", authRoutes)
-
-
-    app.listen(process.env.PORT || 4000, () => {
-        console.log("Server started");
-    });
+        // Get 'er up!
+        app.listen(process.env.PORT || 4000, () => {
+            console.log("Server started");
+        });
+    } catch (err) {
+        console.log("No server today..")
+        console.log(err)
+    }
 }
 
 startServer()
