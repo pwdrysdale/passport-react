@@ -1,12 +1,16 @@
 // https://www.youtube.com/watch?v=cD17CYA1dck
 
 import express from "express";
-import { createConnection } from 'typeorm'
+import { createConnection } from "typeorm";
 import dotenv from "dotenv";
 import cors from "cors";
 import session from "express-session";
 import passport from "passport";
-import authRoutes from './auth/routes'
+import { ApolloServer } from "apollo-server-express";
+import { buildSchema } from "type-graphql";
+
+import authRoutes from "./auth/routes";
+import { Me } from "./modules/Me";
 
 export const startServer = async () => {
     try {
@@ -17,7 +21,7 @@ export const startServer = async () => {
         const app = express();
 
         // db
-        await createConnection()
+        await createConnection();
 
         // Middleware
         app.use(express.json());
@@ -32,22 +36,52 @@ export const startServer = async () => {
                 cookie: {
                     sameSite: false,
                     secure: false,
-                    maxAge: 1000 * 60 * 60 * 24 * 7 // One Week
-                }
+                    maxAge: 1000 * 60 * 60 * 24 * 7, // One Week
+                },
             })
         );
         app.use(passport.initialize());
         app.use(passport.session());
-        app.use("/auth", authRoutes)
+        app.use("/auth", authRoutes);
+        app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+
+        // GraphQL
+        const schema = await buildSchema({
+            resolvers: [Me],
+        });
+
+        const server = new ApolloServer({
+            schema,
+            context: ({ req, res }) => {
+                return { req, res };
+            },
+            formatResponse: (response, requestContext) => {
+                if (requestContext.response && requestContext.response.http) {
+                    requestContext.response.http.headers.set(
+                        "Access-Control-Allow-Origin",
+                        "http://localhost:3000"
+                    );
+                    requestContext.response.http.headers.set(
+                        "Access-Control-Allow-Credentials",
+                        "true"
+                    );
+                }
+                return response;
+            },
+        });
+        await server.start();
+        server.applyMiddleware({ app });
 
         // Get 'er up!
         app.listen(process.env.PORT || 4000, () => {
             console.log("Server started");
         });
-    } catch (err) {
-        console.log("No server today..")
-        console.log(err)
-    }
-}
 
-startServer()
+        return { server, app };
+    } catch (err) {
+        console.log("No server today..");
+        console.log(err);
+    }
+};
+
+startServer();
