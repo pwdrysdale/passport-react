@@ -5,6 +5,11 @@ const passportSetup = require("./functions");
 
 const router = Router();
 
+router.get("/logout", function (req, res) {
+    req.logout();
+    res.redirect("http://localhost:3000");
+});
+
 router.get("/google", (req, res, next) => {
     passport.authenticate("google", { scope: ["profile"] })(req, res, next);
 });
@@ -48,13 +53,6 @@ router.get("/me", (req, res) => {
     console.log("Tried to get the current user");
     console.log(req.user);
     res.send(req.user);
-});
-
-router.get("/logout", (req, res) => {
-    if (req.user) {
-        req.logout();
-        res.send("done");
-    }
 });
 
 export default router;

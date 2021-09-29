@@ -3,7 +3,7 @@
 import express from "express";
 import { createConnection } from "typeorm";
 import dotenv from "dotenv";
-import cors from "cors";
+import cors, { CorsOptions } from "cors";
 import session from "express-session";
 import passport from "passport";
 import { ApolloServer } from "apollo-server-express";
@@ -43,7 +43,27 @@ export const startServer = async () => {
         app.use(passport.initialize());
         app.use(passport.session());
         app.use("/auth", authRoutes);
-        app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+
+        // Cors
+        const allowedOrigins = [
+            "https://studio.apollographql.com",
+            "https://studio.apollographql.com",
+            "http://localhost:3000",
+            "http://localhost:4000/graphql",
+            "http://localhost:4000",
+        ];
+
+        const corsOptions: CorsOptions = {
+            credentials: true,
+            origin: (origin, callback) => {
+                if (allowedOrigins.includes(origin || "invalid"))
+                    return callback(null, true);
+
+                callback(new Error(`Not allowed by CORS: ${origin}`));
+            },
+        };
+
+        app.use(cors(corsOptions));
 
         // GraphQL
         const schema = await buildSchema({
